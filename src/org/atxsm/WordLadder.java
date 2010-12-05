@@ -1,3 +1,5 @@
+package org.atxsm;
+
 import java.io.*;
 import java.util.*;
 
@@ -25,7 +27,7 @@ public class WordLadder {
             System.out.println("Syntax: WordLadder <startword> <endword> <dictionaryfile>");
             return;
         }
-        WordLadder wl = new WordLadder(loadFile(args[2]));
+        WordLadder wl = new WordLadder(args[2]);
         List<String> path = wl.computePath(args[0], args[1]);
         if (path == null || path.isEmpty()) {
             System.out.println("Can't get from " + args[0] + " to " + args[1] + " in " + MAX_DISTANCE + " steps");
@@ -36,13 +38,29 @@ public class WordLadder {
         }
     }
 
+    private long adjacentCount = 0;
+    private long anagramCount = 0;
+    Map<String, GraphNode> graph;
+
+    public WordLadder(Set<String> corpus) {
+        graph = initGraph(corpus);
+    }
+
+    public WordLadder(String filename) {
+        try {
+            graph = initGraph(loadFile(filename));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * returns Set of trimmed lines from the named file
      * @param filename name of input file containing one word per line
      * @return words Set of lines in the file
      * @throws IOException if the file cannot be loaded
      */
-    private static Set<String> loadFile(String filename) throws IOException {
+    public Set<String> loadFile(String filename) throws IOException {
         final BufferedReader reader = new BufferedReader(new FileReader(filename));
         Set<String> corpus = new HashSet<String>();
         for (String s; (s = reader.readLine()) != null; ) {
@@ -51,19 +69,16 @@ public class WordLadder {
         return Collections.unmodifiableSet(corpus);
     }
 
-    private long adjacentCount = 0;
-    private long anagramCount = 0;
-    Map<String, GraphNode> graph;
-
-    public WordLadder(Set<String> corpus) {
-        graph = new HashMap<String, GraphNode>(corpus.size());
+    public Map<String, GraphNode> initGraph(Set<String> corpus) {
+        long startTime = System.currentTimeMillis();
+        Map<String, GraphNode> result = new HashMap<String, GraphNode>(corpus.size());
         Map<Integer, Set<GraphNode>> nodesByLength = new HashMap<Integer, Set<GraphNode>>();
         for (String s : corpus) {
-            GraphNode n = graph.get(s);
+            GraphNode n = result.get(s);
             if (n == null) {
                 n = new GraphNode(s);
             }
-            graph.put(s, n);
+            result.put(s, n);
 
             // evaluate adding n as a neighbor to existing nodes of the same length
             Set<GraphNode> nodesForLength = nodesByLength.get(s.length());
@@ -77,15 +92,17 @@ public class WordLadder {
                     n.addNeighbor(candidate);
                 }
             }
-            
+
             nodesForLength.add(n);
         }
 
-        for (GraphNode n : graph.values()) {
+        for (GraphNode n : result.values()) {
             n.freezeNeighbors();
         }
 
-        System.out.println("Inserted: " + graph.size() + "; adj: " + adjacentCount + "; ana: " + anagramCount);
+        System.out.println((System.currentTimeMillis() - startTime) + " ms;\tInserted: " + result.size()
+                + "; isAdjacent: " + adjacentCount + "; isAnagram: " + anagramCount);
+        return result;
     }
     // graph node contains a word and adjacent neighbors
     public class GraphNode {

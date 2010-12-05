@@ -1,3 +1,6 @@
+package org.atxsm;
+
+import org.atxsm.WordLadder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
