@@ -20,7 +20,7 @@ import java.util.*;
 public class WordLadder {
     private static final int MAX_DISTANCE = 10; // give up after this many steps
 
-    public static final void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException {
         if (args.length != 3) {
             System.out.println("Syntax: WordLadder <startword> <endword> <dictionaryfile>");
             return;
@@ -28,7 +28,7 @@ public class WordLadder {
         WordLadder wl = new WordLadder(loadFile(args[2]));
         List<String> path = wl.computePath(args[0], args[1]);
         if (path == null || path.isEmpty()) {
-            System.out.println("Can't get from " + args[0] + " to " + args[1] + " in less than " + MAX_DISTANCE);
+            System.out.println("Can't get from " + args[0] + " to " + args[1] + " in " + MAX_DISTANCE + " steps");
         } else {
             for (String step : path) {
                 System.out.println(step);
@@ -51,7 +51,10 @@ public class WordLadder {
         return Collections.unmodifiableSet(corpus);
     }
 
+    private long adjacentCount = 0;
+    private long anagramCount = 0;
     Map<String, GraphNode> graph;
+
     public WordLadder(Set<String> corpus) {
         graph = new HashMap<String, GraphNode>(corpus.size());
         Map<Integer, Set<GraphNode>> nodesByLength = new HashMap<Integer, Set<GraphNode>>();
@@ -60,7 +63,6 @@ public class WordLadder {
             if (n == null) {
                 n = new GraphNode(s);
             }
-
             graph.put(s, n);
 
             // evaluate adding n as a neighbor to existing nodes of the same length
@@ -82,6 +84,8 @@ public class WordLadder {
         for (GraphNode n : graph.values()) {
             n.freezeNeighbors();
         }
+
+        System.out.println("Inserted: " + graph.size() + "; adj: " + adjacentCount + "; ana: " + anagramCount);
     }
     // graph node contains a word and adjacent neighbors
     public class GraphNode {
@@ -108,18 +112,19 @@ public class WordLadder {
 
 
     boolean isAdjacent(String s1, String s2) {
+        adjacentCount++;
         return isOneChange(s1, s2) || isAnagram(s1, s2) /* ||
                 isOneShorter(s1, s2) ||
                 isOneShorter(s2, s1) */ ;
     }
 
     boolean isAnagram(String s1, String s2) {
-        return /* s.length() == word.length() && */
-                sort(s1).equals(sort(s2));
+        anagramCount++;
+        return sort(s1).equals(sort(s2));
     }
 
     private List<Character> sort(String s) {
-        List<Character> chars = new ArrayList(s.length());
+        List<Character> chars = new ArrayList<Character>(s.length());
         for (Character c : s.toCharArray()) {
             chars.add(c);
         }
@@ -158,7 +163,6 @@ public class WordLadder {
         if (startNode == endNode) {
             return Collections.singletonList(endWord); // nothing to do
         }
-        List<String> path = new LinkedList<String>();
 
         // traverse graph from startNode setting distances
         Map<GraphNode, Step> nodeToStepMap = new HashMap<GraphNode, Step>();
@@ -180,14 +184,17 @@ public class WordLadder {
                     if (neighbor == endNode) {
                         answerDistance = distance + 1;
                         // if !findAllSolutions
-                        return neighborStep.getPath();
+                        final List<String> path = neighborStep.getPath();
+                        System.out.println(startWord + "->" + endWord + "\t" + path + "\tSearched: " + nodeToStepMap.size());
+                        return path;
                     }
                 }
             }
         }
 
         // can't get there from here within MAX_DISTANCE
-        System.out.println(graphToString());
+        // System.out.println(graphToString());
+        System.out.println(startWord + "->" + endWord + "\t[No Path]\tSearched: " + nodeToStepMap.size());
         return Collections.emptyList();
     }
 
