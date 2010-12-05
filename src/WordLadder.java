@@ -51,25 +51,25 @@ public class WordLadder {
         return Collections.unmodifiableSet(corpus);
     }
 
-    Map<String, Node> graph;
+    Map<String, GraphNode> graph;
     public WordLadder(Set<String> corpus) {
-        graph = new HashMap<String, Node>(corpus.size());
-        Map<Integer, Set<Node>> nodesByLength = new HashMap<Integer, Set<Node>>();
+        graph = new HashMap<String, GraphNode>(corpus.size());
+        Map<Integer, Set<GraphNode>> nodesByLength = new HashMap<Integer, Set<GraphNode>>();
         for (String s : corpus) {
-            Node n = graph.get(s);
+            GraphNode n = graph.get(s);
             if (n == null) {
-                n = new Node(s);
+                n = new GraphNode(s);
             }
 
             graph.put(s, n);
 
             // evaluate adding n as a neighbor to existing nodes of the same length
-            Set<Node> nodesForLength = nodesByLength.get(s.length());
+            Set<GraphNode> nodesForLength = nodesByLength.get(s.length());
             if (nodesForLength == null) {
-                nodesForLength = new HashSet<Node>();
+                nodesForLength = new HashSet<GraphNode>();
                 nodesByLength.put(s.length(), nodesForLength);
             }
-            for (Node candidate : nodesForLength) {
+            for (GraphNode candidate : nodesForLength) {
                 if (isAdjacent(s, candidate.getWord())) {
                     candidate.addNeighbor(n);
                     n.addNeighbor(candidate);
@@ -79,10 +79,33 @@ public class WordLadder {
             nodesForLength.add(n);
         }
 
-        for (Node n : graph.values()) {
+        for (GraphNode n : graph.values()) {
             n.freezeNeighbors();
         }
     }
+    // graph node contains a word and adjacent neighbors
+    public class GraphNode {
+        private String word;
+        private Set<GraphNode> neighbors = new HashSet<GraphNode>();
+
+        public GraphNode(String word) {
+            this.word = word;
+        }
+        public String getWord() { return word; }
+        public void addNeighbor(GraphNode neighbor) {
+            neighbors.add(neighbor);
+        }
+
+        /** makes neighbors permanently immutable */
+        public void freezeNeighbors() {
+            neighbors = Collections.unmodifiableSet(neighbors);
+        }
+        public Set<GraphNode> getNeighbors() {
+            return neighbors;
+        }
+
+    }
+
 
     boolean isAdjacent(String s1, String s2) {
         return isOneChange(s1, s2) || isAnagram(s1, s2) /* ||
@@ -113,9 +136,9 @@ public class WordLadder {
     
     String graphToString() {
         StringBuilder sb = new StringBuilder();
-        for (Node n : graph.values()) {
-            sb.append(n.getWord()).append('\t').append(n.getDistance()).append('\t');
-            for (Node neighbor : n.getNeighbors()) {
+        for (GraphNode n : graph.values()) {
+            sb.append(n.getWord()).append('\t');
+            for (GraphNode neighbor : n.getNeighbors()) {
                 sb.append(neighbor.getWord()).append(',');
             }
             sb.append('\n');
@@ -124,11 +147,11 @@ public class WordLadder {
     }
 
     public List<String> computePath(String startWord, String endWord) {
-        Node startNode = graph.get(startWord);
+        GraphNode startNode = graph.get(startWord);
         if (startNode == null) {
             return Collections.emptyList(); // unknown start
         }
-        Node endNode = graph.get(endWord);
+        GraphNode endNode = graph.get(endWord);
         if (endNode == null) {
             return Collections.emptyList(); // unknown end
         }
@@ -137,30 +160,27 @@ public class WordLadder {
         }
         List<String> path = new LinkedList<String>();
 
-        // reset distances
-        for (Node n : graph.values()) {
-            n.resetDistance();
-        }
-
         // traverse graph from startNode setting distances
-        Deque<Node> nodesToSearch = new LinkedList<Node>();
-        startNode.setDistance(0);
+        Map<GraphNode, Step> nodeToStepMap = new HashMap<GraphNode, Step>();
+        Deque<GraphNode> nodesToSearch = new LinkedList<GraphNode>();
+        nodeToStepMap.put(startNode, new Step(0, startWord, null));
         nodesToSearch.addLast(startNode);
 
         int distance = 0;
         int answerDistance = MAX_DISTANCE;
         while (!nodesToSearch.isEmpty() && distance < answerDistance) {
-            final Node node = nodesToSearch.removeFirst();
-            distance = node.getDistance();
-            for (Node neighbor : node.getNeighbors()) {
-                if (neighbor.getDistance() == null) {
-                    neighbor.setDistance(distance + 1);
+            final GraphNode node = nodesToSearch.removeFirst();
+            final Step step = nodeToStepMap.get(node);
+            distance = step.getDistance();
+            for (GraphNode neighbor : node.getNeighbors()) {
+                if (!nodeToStepMap.containsKey(neighbor)) {
+                    final Step neighborStep = new Step(distance + 1, neighbor.getWord(), step);
+                    nodeToStepMap.put(neighbor, neighborStep);
                     nodesToSearch.addLast(neighbor);
                     if (neighbor == endNode) {
                         answerDistance = distance + 1;
                         // if !findAllSolutions
-                        System.out.println(graphToString());
-                        return pathTo(endNode);
+                        return neighborStep.getPath();
                     }
                 }
             }
@@ -171,60 +191,33 @@ public class WordLadder {
         return Collections.emptyList();
     }
 
-    /**
-     * Builds a path from the given node using decreasing distances.
-     * This method assumes a solution exists in the graph.
-     * @param endNode final node (maximum distance)
-     * @return nodes from a node with zero distance to endNode
-     */
-    List<String> pathTo(Node endNode) {
-        String[] result = new String[endNode.getDistance()+1];
-        Node n = endNode;
-        for (int i = result.length; i >= 0; i--) {
-            result[n.getDistance()] = n.getWord();
-            for (Node neighbor : n.getNeighbors()) {
-                final Integer d = neighbor.getDistance();
-                if (d != null && d == i-1) {
-                    n = neighbor;
-                    break;
-                }
-            }
-        }
-        final List<String> stringList = Arrays.asList(result);
-        System.out.println(stringList);
-        return stringList;
-    }
-
-    // graph node contains a word and adjacent neighbors
-    public class Node {
+    private class Step {
+        private int distance;
         private String word;
-        private Set<Node> neighbors = new HashSet<Node>();
-        private Integer distance = null; // unknown
-
-        public Node(String word) {
-            this.word = word;
-        }
-        public String getWord() { return word; }
-        public void addNeighbor(Node neighbor) {
-            neighbors.add(neighbor);
+        private Step nextStep;
+        public Step(int i, String s, Step step) {
+            distance = i;
+            word = s;
+            nextStep = step;
         }
 
-        /** makes neighbors permanently immutable */
-        public void freezeNeighbors() {
-            neighbors = Collections.unmodifiableSet(neighbors);
-        }
-        public Set<Node> getNeighbors() {
-            return neighbors;
-        }
-
-        public void resetDistance() {
-            distance = null;
-        }
-        public Integer getDistance() {
+        public int getDistance() {
             return distance;
         }
-        public void setDistance(int i) {
-            distance = Integer.valueOf(i);
+
+        /**
+         * Builds a path backwards from the current step to the start (indicated by a null nextStep)
+         * @return list of words from the start to here
+         */
+        public List<String> getPath() {
+            LinkedList<String> result = new LinkedList<String>();
+            result.add(word);
+            Step currentStep = this;
+            while (currentStep.nextStep != null) {
+                currentStep = currentStep.nextStep;
+                result.addFirst(currentStep.word);
+            }
+            return result;
         }
     }
 }
