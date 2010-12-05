@@ -1,11 +1,11 @@
-import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
 * Created by IntelliJ IDEA.
@@ -19,22 +19,20 @@ public class WordLadderTest {
     @BeforeClass
     public static void beforeClass() throws Exception {
         String[] words = { "a", "b", "aa", "ab", "ac", "bb", "ca" };
-        wl = new WordLadder(new HashSet(Arrays.asList(words)));
+        wl = new WordLadder(new HashSet<String>(Arrays.asList(words)));
     }
 
     @Test
     public void testNoPathToStart() throws Exception {
-        assertTrue("Should be no path to start",
-                wl.computePath("nosuchword", "b").isEmpty());
+        assertTrue("Should be no path to start", wl.computePath("nosuchword", "b").isEmpty());
     }
     @Test
     public void testNoPathToEnd() throws Exception {
-        assertTrue("Should be no path to end",
-                wl.computePath("a", "nosuchword").isEmpty());
+        assertTrue("Should be no path to end", wl.computePath("a", "nosuchword").isEmpty());
     }
     @Test
     public void testIdentity() throws Exception {
-        assertArrayEquals(new String[] { "a" } , wl.computePath("a", "a").toArray());
+        assertArrayEquals(new String[] { "a" }, wl.computePath("a", "a").toArray());
     }
     @Test
     public void testNeighbors() {
@@ -73,7 +71,6 @@ public class WordLadderTest {
     }
     @Test
     public void testDisconnected() {
-        assertTrue("Should be no path between b and ca",
-                wl.computePath("b", "ca").isEmpty());
+        assertTrue("Should be no path between b and ca", wl.computePath("b", "ca").isEmpty());
     }
 }
