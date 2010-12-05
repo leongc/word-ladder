@@ -7,7 +7,7 @@ import java.util.*;
  * and each step is one of the following transformations:<ul>
  * <li>change one letter</li>
  * <!-- TODO: add/remove one letter -->
- * <!-- TODO: reorder letters (anagram) -->
+ * <li>reorder letters (anagram)</li>
  * </ul>
  * <dl>
  * <dt>Input</dt><dd>a dictionary (word per line), start word, end word</dd>
@@ -159,6 +159,7 @@ public class WordLadder {
                     if (neighbor == endNode) {
                         answerDistance = distance + 1;
                         // if !findAllSolutions
+                        System.out.println(graphToString());
                         return pathTo(endNode);
                     }
                 }
@@ -166,6 +167,7 @@ public class WordLadder {
         }
 
         // can't get there from here within MAX_DISTANCE
+        System.out.println(graphToString());
         return Collections.emptyList();
     }
 
@@ -188,7 +190,9 @@ public class WordLadder {
                 }
             }
         }
-        return Arrays.asList(result);
+        final List<String> stringList = Arrays.asList(result);
+        System.out.println(stringList);
+        return stringList;
     }
 
     // graph node contains a word and adjacent neighbors

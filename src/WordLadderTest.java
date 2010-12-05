@@ -18,7 +18,7 @@ public class WordLadderTest {
     public static WordLadder wl;
     @BeforeClass
     public static void beforeClass() throws Exception {
-        String[] words = { "a", "b", "aa", "ab", "ac", "bb" };
+        String[] words = { "a", "b", "aa", "ab", "ac", "bb", "ca" };
         wl = new WordLadder(new HashSet(Arrays.asList(words)));
     }
 
@@ -49,7 +49,11 @@ public class WordLadderTest {
     }
     @Test
     public void testAdjacent() {
-        assertTrue("adjacent", wl.isAdjacent("a", "b"));
+        assertTrue("failed adjacent a b", wl.isAdjacent("a", "b"));
+    }
+    @Test
+    public void testAnagram() {
+        assertTrue("failed anagram abc cab", wl.isAnagram("abc", "cab"));
     }
     @Test
     public void testOneLetterPath() {
@@ -60,7 +64,16 @@ public class WordLadderTest {
         assertArrayEquals(new String[] { "a", "b" }, wl.computePath("a", "b").toArray());
     }
     @Test
+    public void testAnagramPath() {
+        assertArrayEquals(new String[] { "ac", "ca" }, wl.computePath("ac", "ca").toArray());
+    }
+    @Test
     public void testTwoLetterPath() {
         assertArrayEquals(new String[] { "aa", "ab", "bb" }, wl.computePath("aa", "bb").toArray());
+    }
+    @Test
+    public void testDisconnected() {
+        assertTrue("Should be no path between b and ca",
+                wl.computePath("b", "ca").isEmpty());
     }
 }
