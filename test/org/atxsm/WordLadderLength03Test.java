@@ -17,11 +17,11 @@ public class WordLadderLength03Test {
     public static WordLadder wl;
     @BeforeClass
     public static void beforeClass() throws Exception {
-        wl = new WordLadder("test/org/atxsm/length02.txt"); // 1022 words takes about 1.5 sec to load
+        wl = new WordLadder("test/org/atxsm/length03.txt"); // 21k words takes about 12min to load, 225M adj
     }
     @Test
     public void testShortPath() {
-        assertArrayEquals(new String[] { "po", "pp", "tp" }, wl.computePath("po", "tp").toArray());
+        assertArrayEquals(new String[] { "A&P", "A&A", "AvA", "evA", "evm", "mev" }, wl.computePath("A&P", "mev").toArray()); // 4603 searched
     }
     @Test
     public void testDisconnected() {
